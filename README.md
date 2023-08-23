@@ -9,23 +9,20 @@ cd eUploader-Public
 virtualenv env
 env\Scripts\activate
 pip install -r require.txt
+python manage.py makemigrations file_repo
 python manage.py migrate
 python manage.py createsuperuser
 python manage.py runserver
 ```
 
+## Important
+### Groups in admin
+* add a group named "Validator" for the validator users
+* add a group named "Automation" for the automation users
+* these group names above are strictly reserved for their usage
+
 ## Using the demo db
-* Need python >= 3.9.13
-* After the following installation replace db.sqlite3 with demo_db.sqlite3 in the settings.py line 154
-```bash
-git clone https://github.com/BCUF/eUploader-Public.git
-cd eUploader-Public
-virtualenv env
-env\Scripts\activate
-pip install -r require.txt
-python manage.py runserver
-```
-* Replace db.sqlite3 with demo_db.sqlite3 in the settings.py line 154
+* After the installation, replace db.sqlite3 with demo_db.sqlite3 in the settings.py line 154
 * Install the [frontend](https://github.com/BCUF/eUploader-Frontend-Public) and run it (using "ng serve")
 
 ### django admin page 
@@ -34,10 +31,14 @@ http://localhost:8000/admin/
 * pwd: adminadmin
 
 ### File Upload page
-http://localhost:4200/upload?token=61988a4708afcb4650a6b12xxxbcc61c84fe36cd
+http://localhost:4200/upload?token=80886113eac6d13e33e3d1d844e8878aa796f904
 
 ### Validation page
 http://localhost:4200/validation
+* validation user 1: ValidationUserX
+* validation pwd 1: ValidationUserXValidationUserX
+* validation user 2: ValidationUserY
+* validation pwd 2: ValidationUserYValidationUserY
 
 ## Deployment
 ### Docker 

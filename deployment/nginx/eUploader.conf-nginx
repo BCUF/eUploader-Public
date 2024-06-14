@@ -1,0 +1,34 @@
+upstream django {
+  server unix:///eUploader/app_django.sock; # for a file socket
+  #server 127.0.0.1:8001; # for a web port socket (we'll use this first)
+}
+
+server {
+  listen 80;
+
+  client_max_body_size 2000M;
+
+  # You may need this to prevent return 404 recursion.
+  location = /404.html {
+    internal;
+  }
+
+  location /static {
+    alias /eUploader/src/static; # your Django project's static files - amend as required
+  }
+
+  location /assets {
+    alias /eUploader/src/static/assets; # your Django project's assets trad files - amend as required
+  }
+
+  location /media {
+    alias /upload/public; # your Django project's static files - amend as required
+  }
+
+  # Finally, send all non-media requests to the Django server.
+  location / {
+    uwsgi_pass  django;
+    uwsgi_read_timeout 5000;
+    include     /etc/nginx/uwsgi_params; # the uwsgi_params file you installed
+  }
+}

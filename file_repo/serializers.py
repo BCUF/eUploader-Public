@@ -12,7 +12,7 @@ You should have received a copy of the GNU General Public License along with eUp
 If not, see <https://www.gnu.org/licenses/>.
 """
 
-from .models import Pipeline, Custom, Upload, FileUpload, MetadataFormsField, FieldOption, MetadataValue, AllowedFileType, Note, UploadValidation, ValidatorGroup
+from .models import Pipeline, Custom, Upload, FileUpload, MetadataFormsField, FieldOption, MetadataValue, AllowedFileType, Note, UploadValidation
 from django.contrib.auth.models import User, Group
 from rest_framework import serializers
 from django.db.models import Q
@@ -37,8 +37,8 @@ class MetadataFormsFieldSerializer(serializers.ModelSerializer):
 
     def get_groupe_scope_name(self, obj):
         if obj.scope:
-            for q in ValidatorGroup.objects.all():
-                if str(obj.scope) == str(q.group):
+            for q in Group.objects.all():
+                if str(obj.scope) == str(q.id):
                     return q.description        
         return None
 
@@ -53,34 +53,19 @@ class PipelineFormsFieldsNoScopeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Pipeline
-        fields = ['id', 'name', 'description', 'max_size_in_byte', 'mimes', 'fields']
-
-
-# class PipelineFormsFieldsWithScopeSerializer(serializers.ModelSerializer):
-#     mimes = AllowedFileTypeSerializer(many=True, read_only=True)
-#     # fields = serializers.SerializerMethodField("get_fields_with_scope")
-
-#     # def get_fields_with_scope(self, obj):
-        
-#     #     qs = MetadataFormsField.objects.filter(pipeline=obj, scope=None)
-#     #     serializer = MetadataFormsFieldSerializer(instance=qs, many=True)
-#     #     return serializer.data
-
-#     class Meta:
-#         model = Pipeline
-#         fields = ['id', 'name', 'description', 'max_size_in_byte', 'mimes', 'fields']
+        fields = ['id', 'name', 'description', 'max_size_in_byte', 'default_same_metadata_for_each_file', 'can_edit_same_metadata_for_each_file', 'mimes', 'fields']
 
 class PipelineSerializer(serializers.ModelSerializer):
     fields = MetadataFormsFieldSerializer(many=True, read_only=True)
     mimes = AllowedFileTypeSerializer(many=True, read_only=True)
     class Meta:
         model = Pipeline
-        fields = ['id', 'name', 'description', 'max_size_in_byte', 'mimes', 'fields']
+        fields = ['id', 'name', 'description', 'max_size_in_byte', 'default_same_metadata_for_each_file', 'can_edit_same_metadata_for_each_file', 'mimes', 'fields']
 
 class PipelineMinimalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Pipeline
-        fields = ['id', 'name', 'description', 'fields']
+        fields = ['id', 'name', 'description', 'fields', 'default_same_metadata_for_each_file', 'can_edit_same_metadata_for_each_file']
 
 class CustomSerializer(serializers.ModelSerializer):
     pipeline = PipelineSerializer(many=False, read_only=True)
@@ -155,12 +140,6 @@ class UploadValidationSerializer(serializers.ModelSerializer):
         
     
 class UploadValidationForListSerializer(FlexFieldsModelSerializer):
-    # pipeline = serializers.SerializerMethodField("get_pipeline")    
-    # upload = UploadSerializer(read_only=True)
     class Meta:
         model = UploadValidation
         fields = ['id', 'state', 'upload', 'workflow', 'group']
-        # expandable_fields = {'upload': UploadSerializer}
-
-    # def get_pipeline(self, obj):
-        # return obj.upload.pipeline

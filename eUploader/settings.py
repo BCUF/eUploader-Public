@@ -39,21 +39,34 @@ STATIC_ROOT = os.path.join(BASE_DIR, "static")
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '+xxwqqtre1r1-@dtx4*_*-9c@75bvgt2uji%jd-s*#bmgd33x+'
+SECRET_KEY = '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 if not DEBUG:
     LOG_DIR = os.path.join(BASE_DIR, "/eUploader_log/")
+    LOG_FILE = os.path.join(LOG_DIR, "info.log")
+    if not os.path.exists(LOG_DIR):
+        os.mkdir(LOG_DIR)
     LOGGING = {
         'version': 1,
         'disable_existing_loggers': False,
+        'formatters' : {
+            'standard':{
+                'format': '%(asctime)s %(levelname)s %(name)s %(message)s'
+            }
+        },
         'handlers': {
             'file': {
                 'level': 'INFO',
-                'class': 'logging.FileHandler',
-                'filename': os.path.join(LOG_DIR, 'info.log'),
+                'class': 'logging.handlers.RotatingFileHandler',
+                'filename': LOG_FILE,
+                'maxBytes' : 5242880,
+                'encoding' : 'utf-8',
+                'backupCount' : 5,
+                'formatter' : 'standard'
             },
         },
         'loggers': {
@@ -116,8 +129,6 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:4200",
     "http://127.0.0.1:4200",
-    # "http://localhost:8000",
-    # "http://127.0.0.1:8000",
 ]
 
 ROOT_URLCONF = 'eUploader.urls'
@@ -217,8 +228,8 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 # CLAMD
-# CLAMD_SOCKET = '/var/run/clamav/clamd.sock'
-# CLAMD_USE_TCP = True
-# CLAMD_TCP_SOCKET = 3310
-# CLAMD_TCP_ADDR = '127.0.0.1'
-# CLAMD_ENABLED = True
+CLAMD_SOCKET = '/var/run/clamav/clamd.sock'
+CLAMD_USE_TCP = True
+CLAMD_TCP_SOCKET = 3310
+CLAMD_TCP_ADDR = '127.0.0.1'
+CLAMD_ENABLED = True

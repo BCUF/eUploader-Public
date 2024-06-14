@@ -12,7 +12,7 @@ You should have received a copy of the GNU General Public License along with eUp
 If not, see <https://www.gnu.org/licenses/>.
 """
 
-from .models import Pipeline, Custom, Upload, FileUpload, MetadataFormsField, FieldOption, MetadataValue, AllowedFileType, Note, UploadValidation, Workflow, ValidatorGroup
+from .models import Pipeline, Custom, Upload, FileUpload, MetadataFormsField, FieldOption, MetadataValue, AllowedFileType, Note, UploadValidation, Workflow
 from django.contrib.auth.models import User, Group
 from rest_framework import serializers
 
@@ -126,19 +126,14 @@ class UploadValidationSerializer(FlexFieldsModelSerializer):
 class GroupSerializer(FlexFieldsModelSerializer):
     class Meta:
         model = Group
-        fields = '__all__'
-
-class ValidatorGroupSerializer(FlexFieldsModelSerializer):
-    class Meta:
-        model = ValidatorGroup
-        fields = '__all__'
+        fields = ['id', 'name', 'description']
 
 class WorkflowSerializer(FlexFieldsModelSerializer):
     class Meta:
         model = Workflow
         fields = '__all__'
         expandable_fields = {
-            'validator_groups': (ValidatorGroupSerializer, {'many': True}),
+            'validator_groups': (GroupSerializer, {'many': True}),
             'pipeline': PipelineMinimalSerializer
         }
     
@@ -155,7 +150,7 @@ class UploadValidationForListSerializer(FlexFieldsModelSerializer):
         fields = '__all__'
         expandable_fields = {
             'upload': UploadSerializer,
-            'group': ValidatorGroupSerializer,
+            'group': GroupSerializer,
             'workflow': WorkflowSerializer
         }
 

@@ -13,6 +13,7 @@ If not, see <https://www.gnu.org/licenses/>.
 """
 
 from django.urls import path, re_path, include
+from django.conf.urls import url
 from . import views, api_views
 from rest_framework import routers
 from rest_framework.authtoken.views import obtain_auth_token
@@ -28,7 +29,6 @@ router.register(r'pipeline', api_views.PipelineViewSet, basename="pipeline")
 router.register(r'pipeline-minimal', api_views.PipelineMinimalViewSet, basename="pipeline-minimal")
 router.register(r'upload', api_views.UploadViewSet, basename="upload")
 router.register(r'file', api_views.FileUploadViewSet, basename="file")
-router.register(r'metadata-value', api_views.MetadataValueViewSet, basename="metadata-value")
 router.register(r'note', api_views.NoteViewSet, basename="note")
 router.register(r'upload-validation', api_views.UploadValidationViewSet, basename="upload-validation")
 

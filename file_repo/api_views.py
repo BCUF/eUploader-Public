@@ -13,8 +13,8 @@ If not, see <https://www.gnu.org/licenses/>.
 """
 
 from rest_framework import viewsets, mixins
-from django.contrib.auth.models import User
-from .models import Pipeline, Upload, FileUpload, MetadataValue, Note, UploadValidation, MetadataFormsField, ValidatorGroup, Workflow
+from django.contrib.auth.models import User, Group
+from .models import Pipeline, Upload, FileUpload, MetadataValue, Note, UploadValidation, MetadataFormsField, Workflow
 from rest_framework import status
 from rest_framework.response import Response
 from .serializers import PipelineSerializer, UserSerializer, UserMinimalSerializer, UploadSerializer, PipelineMinimalSerializer, NoteSerializer, UploadMinimalSerializer, FileUploadSerializer, MetadataValueSerializer, PipelineFormsFieldsNoScopeSerializer
@@ -27,9 +27,10 @@ from rest_framework.authtoken.models import Token
 import json, os
 from .flex_serializers import UploadValidationForListSerializer, UploadValidationSerializer
 from rest_framework import mixins
-from .permissions import IsValidator, CanAutomate, is_upload_validator_or_uploader
+from .permissions import IsValidator, CanAutomate, is_upload_validator_or_uploader, IsUploaderOrValidatorForFileUpload, IsUploaderOrValidatorForUpload, IsUploaderOrValidatorForFileUpload
 from rest_framework import filters
 from django.http import FileResponse
+from datetime import datetime
 
 @api_view(['GET'])
 def download_file(request, id):
@@ -95,6 +96,7 @@ class NoteViewSet(viewsets.ModelViewSet, mixins.CreateModelMixin, mixins.ListMod
 
 class UploadViewSet(viewsets.ModelViewSet):
     serializer_class = UploadSerializer
+    permission_classes = [IsUploaderOrValidatorForUpload]
 
     def get_queryset(self):
         date_from = self.request.query_params.get('date_from')
@@ -109,13 +111,16 @@ class UploadViewSet(viewsets.ModelViewSet):
         upload = Upload.objects.filter(user=request.user).last()
         if upload:
             if upload.status == Upload.Status.INIT or upload.status == Upload.Status.FILE_UPLOADED:
-                # save to set the date auto
+                upload.uploaded_at = datetime.now()
                 upload.save()
                 serializer = UploadSerializer(upload)
                 return Response(serializer.data)
         serializer = UploadSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(user=self.request.user)
+            serializer.save(
+                user=self.request.user, 
+                pipeline=self.request.user.custom.pipeline, 
+                same_meta_for_each_file=self.request.user.custom.pipeline.default_same_metadata_for_each_file)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -151,33 +156,40 @@ class UploadsByPipeline(APIView):
 
     def get(self, request, pipeline_id):
 
+        pipeline = None
         try:
             pipeline = Pipeline.objects.get(id=pipeline_id)
         except Pipeline.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
-
+        
         date_from = request.query_params.get('date_from')
-        user_id = request.query_params.get('user')
-        if date_from and user_id:
-            uploads = Upload.objects.filter(user=user_id).filter(user__custom__pipeline=pipeline).filter(uploaded_at__gte=date_from).order_by('id')
-        elif not date_from and user_id:
-            uploads = Upload.objects.filter(user=user_id).filter(user__custom__pipeline=pipeline).order_by('id')
-        elif date_from and not user_id:
-            uploads = Upload.objects.filter(user__custom__pipeline=pipeline).filter(uploaded_at__gte=date_from).order_by('id')
+        upload_status = request.query_params.get('status', "COMPLETED").upper()
+        uploads = []
+        
+        if request.user and request.user.groups.filter(name='Automation'):
+
+            # find the users which linked the requested pipeline
+            upload_users = []
+            for upload in Upload.objects.all():
+                if hasattr(upload.user, 'custom') and (str(upload.user.custom.pipeline.id) == str(pipeline_id)):
+                    upload_users.append(upload.user)
+
+            if date_from:
+                uploads = Upload.objects.filter(user__in=upload_users).filter(status=upload_status).filter(uploaded_at__gte=date_from).order_by('id')
+            else:
+                uploads = Upload.objects.filter(user__in=upload_users).filter(status=upload_status).order_by('id')
         else:
-            uploads = Upload.objects.filter(user__custom__pipeline=pipeline)
+
+            if date_from:
+                uploads = Upload.objects.filter(user=request.user).filter(user__custom__pipeline=pipeline).filter(status=upload_status).filter(uploaded_at__gte=date_from).order_by('id')
+            else:
+                uploads = Upload.objects.filter(user=request.user).filter(user__custom__pipeline=pipeline).filter(status=upload_status).order_by('id')
 
         paginator = PageNumberPagination()
         paginator.page_size = api_settings.PAGE_SIZE
         result_page = paginator.paginate_queryset(uploads, request)
         serializer = UploadSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
-
-class MetadataValueViewSet(viewsets.ModelViewSet):
-    serializer_class = MetadataValueSerializer
-    queryset = MetadataValue.objects.all().order_by('id')
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['file']
 
 class UploadValidationViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
@@ -194,19 +206,20 @@ class UploadValidationViewSet(viewsets.ModelViewSet):
 
         if ordering:
             if ordering.lower() == "upload__uploaded_at" or ordering.lower() == "-upload__uploaded_at":
-                validations = UploadValidation.objects.filter(group__group__in=user_groups).order_by(ordering)
+                validations = UploadValidation.objects.filter(group__in=user_groups).order_by(ordering)
             elif ordering.lower() == "upload__id" or ordering.lower() == "-upload__id":
-                validations = UploadValidation.objects.filter(group__group__in=user_groups).order_by(ordering)
+                validations = UploadValidation.objects.filter(group__in=user_groups).order_by(ordering)
             else:
-                validations = UploadValidation.objects.filter(group__group__in=user_groups).order_by("id")
+                validations = UploadValidation.objects.filter(group__in=user_groups).order_by("id")
         else:
-            validations = UploadValidation.objects.filter(group__group__in=user_groups).order_by("id")
+            validations = UploadValidation.objects.filter(group__in=user_groups).order_by("id")
 
         return validations
 
 class FileUploadViewSet(viewsets.ModelViewSet):
     serializer_class = FileUploadSerializer
     filter_backends = [DjangoFilterBackend]
+    permission_classes = [IsUploaderOrValidatorForFileUpload]
     filterset_fields = ['upload']
 
     def get_queryset(self):
@@ -233,7 +246,7 @@ class UserByToken(APIView):
         except Pipeline.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-@api_view(['PUT'])    
+@api_view(['PUT'])
 def file_metadata(request, file_id):
     
     try:
@@ -241,76 +254,81 @@ def file_metadata(request, file_id):
         file = FileUpload.objects.get(id=file_id)
 
         try:
+
             upload = Upload.objects.get(id=file.upload.id)
 
-            data = json.loads(request.body)
+            if is_upload_validator_or_uploader(request.user, upload):
 
-            if upload.same_meta_for_each_file:
-                for f in upload.files.all():
+                data = json.loads(request.body)
+
+                if upload.same_meta_for_each_file:
+                    for f in upload.files.all():
+                        for d in data:
+                            try:
+                                
+                                m = MetadataValue.objects.get(key=d["key"], file=f)
+                                if m.value != d["value"]:
+                                    m.value = d["value"]
+                                    m.save()
+                            except MetadataValue.DoesNotExist:
+                                m = MetadataValue()
+                                m.file = f
+                                m.key = d["key"]
+                                m.value = d["value"]
+                                m.save()
+
+                else:
                     for d in data:
                         try:
-                            
-                            m = MetadataValue.objects.get(key=d["key"], file=f)
+                            m = MetadataValue.objects.get(key=d["key"], file=file)
                             if m.value != d["value"]:
                                 m.value = d["value"]
                                 m.save()
                         except MetadataValue.DoesNotExist:
                             m = MetadataValue()
-                            m.file = f
+                            m.file = file
                             m.key = d["key"]
                             m.value = d["value"]
                             m.save()
 
-            else:
-                for d in data:
-                    try:
-                        m = MetadataValue.objects.get(key=d["key"], file=file)
-                        if m.value != d["value"]:
-                            m.value = d["value"]
-                            m.save()
-                    except MetadataValue.DoesNotExist:
-                        m = MetadataValue()
-                        m.file = file
-                        m.key = d["key"]
-                        m.value = d["value"]
-                        m.save()
+                """
+                Create a validation if the user is an uploader
+                """
+                if hasattr(request.user, "custom"):
 
-            """
-            Create a validation if the user is an uploader
-            """
-            if hasattr(request.user, "custom"):
-
-                # check if the upload already has a validation
-                has_validation_already = upload.validations.count() > 0
-
-                if not has_validation_already:
-
-                    groups = set()
-
-                    workflows = request.user.custom.pipeline.workflows.all()
+                    # check if the upload already has a validation
+                    has_validation_already = upload.validations.count() > 0
 
                     if not has_validation_already:
 
-                        for workflow in workflows:
-                            validator_groups = ValidatorGroup.objects.filter(workflow=workflow)
-                            for group in validator_groups:
-                                groups.add(group)
-                                
-                        # Create validations
-                        for group in groups:
-                            validation = UploadValidation()
-                            validation.upload = upload
-                            validation.group = group
-                            validation.workflow = workflows[0]
-                            validation.save()
+                        groups = set()
+
+                        workflows = request.user.custom.pipeline.workflows.all()
+
+                        if not has_validation_already:
+
+                            for workflow in workflows:
+                                validator_groups = Group.objects.filter(workflow=workflow)
+                                for group in validator_groups:
+                                    groups.add(group)
+                                    
+                            # Create validations
+                            for group in groups:
+                                validation = UploadValidation()
+                                validation.upload = upload
+                                validation.group = group
+                                validation.workflow = workflows[0]
+                                validation.save()
 
 
-            serializer = FileUploadSerializer(file)
-            return Response(serializer.data)
+                serializer = FileUploadSerializer(file)
+                return Response(serializer.data)
+            
+            else:
+                return Response(status=status.HTTP_401_UNAUTHORIZED)
+
         except Upload.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
             
     except FileUpload.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
-        
-    

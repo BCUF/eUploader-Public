@@ -1,0 +1,82 @@
+{
+    "HEADER":{
+        "LANGUAGES": "Langues",
+        "LOGOUT": "Déconnexion"
+    },
+    "COMMON":{
+        "PREVIOUS": "Précédent",
+        "NEXT": "Suivant",
+        "TERMINATE": "Terminé"
+    },
+    "FORM":{
+        "SAVE": "Sauvegarder",
+        "GO_NEXT_STEP": "Passez à l'étape suivante?",
+        "CONFIRM": "Confirmation",
+        "CONTINUE_TO_ADD": "Continuer d'ajouter des fichiers",
+        "CANCEL": "Annuler",
+        "EDIT": "Modifier"
+    },
+    "ERROR":{
+        "ERROR": "Erreur",
+        "FILE_ALREADY_EXISTS" : "Le fichier suivant se trouve déjà dans la liste: ",
+        "INVALID_TOKEN": "Jeton invalide, si le problème persiste veuillez contacter BCU_servicedesk@fr.ch",
+        "MAX_SIZE_REACHED": {
+            "A": "Le fichier",
+            "B": "dépasse la taille maximale de"
+        },
+        "WRONG_TYPE": "n'est pas parmis les types suivant:",
+        "COULD_NOT_UPLOAD": "Impossible de téléverser le fichier:",
+        "UNKNOWN": "Erreur inconnue"
+    },
+    "UPLOAD": {
+        "ADD_FILES": "Ajouter des fichiers",
+        "ADD_METADATAS": "Ajouter des métadonnées",
+        "FILE_LIST": "Liste des fichiers",
+        "CAN_UPLOAD_WHAT": {
+            "ALLOWED_TYPE": "Ajouté des fichiers de type: ",
+            "MAX_SIZE": "Taille maximale par fichier: "
+        },
+        "YOU_HAVE_FINISHED": "Vous avez terminé",
+        "THANKS": "Merci",
+        "NEW_UPLOAD": "Nouveau versement",
+        "FILTER": "Filtre",
+        "FILE": "Fichier",
+        "SIZE": "Taille",
+        "TYPE": "Type",
+        "PROGRESS": "Progression",
+        "DELETE": "Supprimer",
+        "FILL": "Remplir?",
+        "FORM_COMPLETE": "Formulaire completé",
+        "ADD_SAME_META": "Ajouter les mêmes metadata pour tous les fichiers?",
+        "WANT_TO_DELETE": "Voulez-vous effacer le fichier: ",
+        "FILTER_PLACEHOLDER": "Nom du fichier, type, etc...",
+        "CONFIRM_END": "Cliquer sur terminer pour confirmer l'upload"
+    },
+    "VALIDATION": {
+        "VALIDATION": "Valider",
+        "ADD": "Ajouter",
+        "COMMENT_BY": "Commenté par",
+        "ADD_NOTE": "Ajouter une note ici",
+        "SAVED": "Formulaire sauvegardé",
+        "RETURN": "Retour",
+        "VALIDATE": "Validé",
+        "REJECT": "Refusé",
+        "LIST": "Liste des validations",
+        "EMPTY": "Il n'y a pas de validation",
+        "VALID_OR_SEE": "valider/voir?",
+        "FILE_NUMBER": "nombre de fichier(s)",
+        "GROUPS": "groupe(s) de validation",
+        "UPLOAD_DATE": "téléversé le",
+        "UPLOAD_BY": "téléversé par",
+        "STATE": "état"
+    },
+    "PAGINATOR":{
+        "ITEMS_PER_PAGE_LABEL": "Objets par page:",
+        "NEXT_PAGE_LABEL": "Prochaine page",
+        "PREVIOUS_PAGE_LABEL": "Précédente page",
+        "FIRST_PAGE_LABEL": "Première page",
+        "LAST_PAGE_LABEL": "Dernière page",
+        "PAGE": "Page",
+        "OF": "sur"
+    }
+}

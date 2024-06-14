@@ -1,0 +1,82 @@
+{
+    "HEADER":{
+        "LANGUAGES": "Sprachen",
+        "LOGOUT": "Abmelden"
+    },
+    "COMMON":{
+        "PREVIOUS": "Vorherige",
+        "NEXT": "Weiter",
+        "TERMINATE": "Beenden"
+    },
+    "ERROR":{
+        "ERROR": "Fehler",
+        "FILE_ALREADY_EXISTS" : "Die folgende Datei ist bereits in der Liste: ",
+        "INVALID_TOKEN": "Ungültiger Link. Wenn das Problem weiterhin besteht, wenden Sie sich bitte an BCU_servicedesk@fr.ch",
+        "MAX_SIZE_REACHED": {
+            "A": "Die Datei",
+            "B": "überschreitet die maximale Größe von"
+        },
+        "WRONG_TYPE": "gehört nicht zu den folgenden Typen:",
+        "COULD_NOT_UPLOAD": "Hochladen der Datei nicht möglich:",
+        "UNKNOWN": "unbekannter Fehler"
+    },
+    "FORM":{
+        "SAVE": "Speichern",
+        "GO_NEXT_STEP": "Mit der nächsten Schritt fortfahren?",
+        "CONFIRM": "Bestätigung",
+        "CONTINUE_TO_ADD": "Fügen Sie weitere Dateien hinzu",
+        "CANCEL": "Annulieren",
+        "EDIT": "Bearbeiten"
+    },
+    "UPLOAD": {
+        "ADD_FILES": "Dateien hinzufügen",
+        "ADD_METADATAS": "Metadaten hinzufügen",
+        "FILE_LIST": "Liste der Dateien",
+        "CAN_UPLOAD_WHAT": {
+            "ALLOWED_TYPE": "Dateien des Typs hinzufügen: ",
+            "MAX_SIZE": "Maximale Größe pro Datei: "
+        },
+        "YOU_HAVE_FINISHED": "Sie sind fertig",
+        "THANKS": "Danke",
+        "NEW_UPLOAD": "Neuer Upload",
+        "FILTER": "Filter",
+        "FILE": "Datei",
+        "SIZE": "Größe",
+        "TYPE": "Type",
+        "PROGRESS": "Fortschritt",
+        "DELETE": "Löschen",
+        "FILL": "Ausfüllen?",
+        "FORM_COMPLETE": "Ausgefülltes Formular",
+        "ADD_SAME_META": "Dieselben Metadaten für alle Dateien hinzufügen?",
+        "WANT_TO_DELETE": "Möchten Sie die Datei löschen: ",
+        "FILTER_PLACEHOLDER": "Dateiname, Typ, usw...",
+        "CONFIRM_END": "Klicken Sie auf „Fertig stellen“, um den Upload zu bestätigen"
+    },
+    "VALIDATION":{
+        "VALIDATION": "Bestätigen",
+        "COMMENT_BY": "Kommentiert von",
+        "ADD": "Hinzufügen",
+        "ADD_NOTE": "Fügen Sie hier eine Notiz hinzu",
+        "SAVED": "Gespeichertes Formular",
+        "RETURN": "Zurück",
+        "VALIDATE": "Gültig",
+        "REJECT": "Bestritten",
+        "LIST": "Liste der Validierungen",
+        "EMPTY": "Es gibt keine Validierung",
+        "VALID_OR_SEE": "bestätigen/sehen?",
+        "FILE_NUMBER": "Anzahl der Datei(en)",
+        "GROUPS": "Validierungsgruppe(n)",
+        "UPLOAD_DATE": "hochgeladen am",
+        "UPLOAD_BY": "hochgeladen von",
+        "STATE": "Zustand"
+    },
+    "PAGINATOR":{
+        "ITEMS_PER_PAGE_LABEL": "Objekte pro Seite:",
+        "NEXT_PAGE_LABEL": "Nächste Seite",
+        "PREVIOUS_PAGE_LABEL": "Vorherige Seite",
+        "FIRST_PAGE_LABEL": "Erste Seite",
+        "LAST_PAGE_LABEL": "Letzte Seite",
+        "PAGE": "Seite",
+        "OF": "auf"
+    }
+}

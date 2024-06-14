@@ -24,5 +24,5 @@ class FieldOptionFieldTranslationOptions(TranslationOptions):
     fields = ('value',)
 
 @register(Pipeline)
-class FieldOptionFieldTranslationOptions(TranslationOptions):
+class PipelineTranslationOptions(TranslationOptions):
     fields = ('name', 'description')

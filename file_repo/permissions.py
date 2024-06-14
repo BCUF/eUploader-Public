@@ -16,16 +16,32 @@ from rest_framework import permissions
 
 class IsValidator(permissions.BasePermission):
     def has_permission(self, request, view):
-        if request.user and request.user.groups.filter(name='Validator'):
-            return True
-        return False
+        return request.user and request.user.groups.filter(name='Validator')
     
 class CanAutomate(permissions.BasePermission):
     def has_permission(self, request, view):
+        return request.user and request.user.groups.filter(name='Automation')
+    
+class IsUploaderOrValidatorForUpload(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if hasattr(request.user, 'custom') and (str(request.user) == str(obj.user)):
+            return True
+        for validation in obj.validations.all():
+            if validation.group.id in [x.id for x in request.user.groups.all()]:
+                return True
         if request.user and request.user.groups.filter(name='Automation'):
             return True
-        return False
-    
+        
+class IsUploaderOrValidatorForFileUpload(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        if hasattr(request.user, 'custom') and (str(request.user) == str(obj.upload.user)):
+            return True
+        for validation in obj.upload.validations.all():
+            if validation.group.id in [x.id for x in request.user.groups.all()]:
+                return True
+        if request.user and request.user.groups.filter(name='Automation'):
+            return True
+
 def is_upload_validator_or_uploader(user, upload):
     # check if the user is the uploader
     if str(upload.user) == str(user.username):
@@ -36,6 +52,6 @@ def is_upload_validator_or_uploader(user, upload):
             return True
     # check if the user is part of Automation group    
     if user and user.groups.filter(name='Automation'):
-        return True   
+        return True
 
     return False

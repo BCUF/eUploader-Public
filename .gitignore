@@ -1,5 +1,7 @@
 media/*
 upload/*
+static/*
+client_folder_test/
 .vscode
 *.pptx
 # Byte-compiled / optimized / DLL files

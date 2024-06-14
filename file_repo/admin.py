@@ -15,13 +15,14 @@ If not, see <https://www.gnu.org/licenses/>.
 from django.contrib import admin
 from django.conf import settings
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.http import HttpResponse
 import os, io
 import zipfile
 import datetime
-from .models import FileUpload, AllowedFileType, Config, Pipeline, MetadataFormsField, Custom, MetadataValue, Upload, FieldOption, ValidatorGroup, Workflow, UploadValidation, Note
+from .models import FileUpload, AllowedFileType, Config, Pipeline, MetadataFormsField, Custom, MetadataValue, Upload, FieldOption, Workflow, UploadValidation, Note
 from nested_inline.admin import NestedModelAdmin, NestedTabularInline
 
 
@@ -55,10 +56,10 @@ class FileUploadInline(NestedTabularInline):
 
 @admin.register(Upload)
 class UploadAdmin(NestedModelAdmin):
-    search_fields = ['uploaded_at', 'user__username']
-    ordering = ['uploaded_at']
+    search_fields = ['uploaded_at', 'user__username', 'pipeline']
+    ordering = ['uploaded_at', 'pipeline']
     list_display = ['id', 'user', 'uploaded_at','files_count', 'status', 'pipeline']
-    list_filter = ['uploaded_at', 'status']
+    list_filter = ['uploaded_at', 'status', 'pipeline']
 
     inlines = [
         FileUploadInline
@@ -67,14 +68,11 @@ class UploadAdmin(NestedModelAdmin):
     def files_count(self, obj):
         return obj.files.count()
 
-    def pipeline(self, obj):
-        return Pipeline.objects.get(id=obj.user.custom.pipeline.id)
-
 @admin.register(FileUpload)
 class FileUploadAdmin(admin.ModelAdmin):
     search_fields = ['uploaded_file', 'upload__user__username']
     list_display = ['id', 'pipeline', 'user', 'checksum', 'name', 'uploaded_file', 'type']
-    list_filter = ['upload__user__custom__pipeline', 'upload__user__username']
+    list_filter = ['upload__pipeline__name', 'upload__user__username']
     actions = [download_multiple_files]
 
     inlines = [
@@ -85,7 +83,7 @@ class FileUploadAdmin(admin.ModelAdmin):
         return User.objects.get(id=obj.upload.user.id)
 
     def pipeline(self, obj):
-        return Pipeline.objects.get(id=obj.upload.user.custom.pipeline.id)
+        return obj.upload.pipeline
 
     def get_action_choices(self, request):
         choices = super(FileUploadAdmin, self).get_action_choices(request)
@@ -140,9 +138,9 @@ class MetadataFormsFieldInline(admin.TabularInline):
 
 @admin.register(Pipeline)
 class PipelineAdmin(TranslationAdmin):
-    search_fields = ['name', 'description', 'max_size_in_byte']
-    list_display = ['name', 'description', 'max_size_in_byte', 'get_mimes']
-    fields = ['name', 'description', 'max_size_in_byte',]
+    search_fields = ['name', 'description', 'max_size_in_byte', 'default_same_metadata_for_each_file', 'can_edit_same_metadata_for_each_file']
+    list_display = ['name', 'description', 'max_size_in_byte', 'get_mimes', 'default_same_metadata_for_each_file', 'can_edit_same_metadata_for_each_file']
+    fields = ['name', 'description', 'max_size_in_byte', 'default_same_metadata_for_each_file', 'can_edit_same_metadata_for_each_file']
     filter_horizontal = ('mimes',)
     inlines = [
         AllowedFileTypeInline,
@@ -154,10 +152,8 @@ class PipelineAdmin(TranslationAdmin):
 
 class CustomInline(admin.TabularInline):
     model = Custom
-    can_delete = False
 
 class UserAdmin(BaseUserAdmin):
-    list_display = BaseUserAdmin.list_display + ('pipeline',)
     list_display = BaseUserAdmin.list_display + ('pipeline',)
     search_fields = BaseUserAdmin.list_display + ('pipeline',)
 
@@ -165,6 +161,10 @@ class UserAdmin(BaseUserAdmin):
 
     def pipeline(self, obj):
         return  Pipeline.objects.get(id=obj.custom.pipeline.id) if (hasattr(obj, "custom") and hasattr(obj.custom.pipeline, "id")) else None
+    
+class GroupAdmin(BaseGroupAdmin):
+    list_display = BaseGroupAdmin.list_display + ('description',)
+    search_fields = BaseGroupAdmin.list_display + ('description',)
 
 @admin.register(MetadataValue)
 class MetadataValueAdmin(admin.ModelAdmin):
@@ -176,15 +176,10 @@ class WorkflowAdmin(admin.ModelAdmin):
     search_fields = ['name', 'description']
     list_display = ['name', 'description']
 
-@admin.register(ValidatorGroup)
-class ValidatorGroupAdmin(admin.ModelAdmin):
-    search_fields = ['description', ]
-    list_display = ['id', 'description', 'group']
-
 @admin.register(UploadValidation)
 class UploadValidationAdmin(admin.ModelAdmin):
-    search_fields = ['id', 'state', 'upload', 'validated_by']
-    list_display = ['id', 'state', 'upload', 'validated_by']
+    search_fields = ['id', 'state', 'upload', 'upload_id', 'validated_by']
+    list_display = ['id', 'state', 'upload', 'upload_id', 'validated_by']
 
 @admin.register(Note)
 class NoteAdmin(admin.ModelAdmin):
@@ -194,3 +189,5 @@ class NoteAdmin(admin.ModelAdmin):
 
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
+admin.site.unregister(Group)
+admin.site.register(Group, GroupAdmin)

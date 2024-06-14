@@ -24,9 +24,8 @@ from django.shortcuts import render
 from django.template import loader
 from django.conf import settings
 
-from . models import FileUpload, AllowedFileType, Config, Upload, MetadataValue, UploadValidation, ValidatorGroup
+from . models import FileUpload, AllowedFileType, Config, Upload, MetadataValue, UploadValidation
 from . apps import FileRepoConfig as FC
-from . forms import UploadFileForm
 from rest_framework import status
 
 from rest_framework.authtoken.models import Token
@@ -38,7 +37,14 @@ import csv
 import os
 import logging
 
+from django.shortcuts import render
+from django.views.generic import TemplateView
+
 logger = logging.getLogger(__name__)
+
+class HomePageView(TemplateView):
+    def get(self, request, **kwargs):
+        return render(request, 'file_repo/index.html', context=None)
 
 
 

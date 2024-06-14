@@ -17,6 +17,9 @@ from django.utils import timezone, dateformat
 from django.contrib.auth.models import User, Group
 import os
 from .apps import FileRepoConfig
+from django_clamd.validators import validate_file_infection
+
+Group.add_to_class('description', models.TextField(null=True, blank=True))
 
 def user_directory_path(instance, filename):
     pipeline_path = ""
@@ -28,42 +31,6 @@ def user_directory_path(instance, filename):
     # file will be uploaded to MEDIA_ROOT/user_<id>/upload_<id>/<filename>
     return '{0}/{1}/{2}/{3}'.format(pipeline_path, instance.upload.user, instance.upload.id, filename)
 
-
-
-class Upload(models.Model):
-
-    class Status(models.TextChoices):
-        INIT = 'INIT', 'INIT'
-        FILE_UPLOADED = 'FILE_UPLOADED', 'FILE_UPLOADED'
-        COMPLETED ='COMPLETED', 'COMPLETED'
-        ERROR = 'ERROR', 'ERROR'
-        ABORTED = 'ABORTED', 'ABORTED'
-
-    id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    uploaded_at = models.DateTimeField(auto_now_add=True, null=False, blank=False)
-    same_meta_for_each_file = models.BooleanField(default=False)
-    status = models.CharField(
-        max_length=13,
-        choices=Status.choices,
-        default=Status.INIT,
-    )
-
-    def __str__(self):
-        return f"{self.user} {self.uploaded_at}"
-    
-class FileUpload(models.Model):
-    id = models.AutoField(primary_key=True)
-    upload = models.ForeignKey(Upload, on_delete=models.CASCADE, related_name="files")
-    uploaded_file = models.FileField(null=False, blank=False, upload_to=user_directory_path)
-    checksum = models.CharField(null=True, blank=True, max_length=255)
-    type = models.CharField(null=True, blank=True, max_length=255, verbose_name="file type from frontend")
-    
-    def name(self):
-        return os.path.basename(self.uploaded_file.name)
-
-    def __str__(self):
-        return self.uploaded_file.name
 
 class Config(models.Model):
     id = models.AutoField(primary_key=True)
@@ -77,16 +44,55 @@ class Pipeline(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(null=False, blank=False, max_length=255, unique=True)
     description = models.TextField(null=False, blank=False)
+    default_same_metadata_for_each_file = models.BooleanField(default=True)
+    can_edit_same_metadata_for_each_file = models.BooleanField(default=True)
     max_size_in_byte = models.IntegerField(default=FileRepoConfig.DEFAULT_SIZE_LIMIT_IN_BYTE)
 
     def __str__(self):
         return self.name
+    
+class Upload(models.Model):
+
+    class Status(models.TextChoices):
+        INIT = 'INIT', 'INIT'
+        FILE_UPLOADED = 'FILE_UPLOADED', 'FILE_UPLOADED'
+        COMPLETED ='COMPLETED', 'COMPLETED'
+        ERROR = 'ERROR', 'ERROR'
+        ABORTED = 'ABORTED', 'ABORTED'
+
+    id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    pipeline = models.ForeignKey(Pipeline, on_delete=models.SET_NULL, null=True, blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True, null=False, blank=False)
+    same_meta_for_each_file = models.BooleanField(default=True)
+    status = models.CharField(
+        max_length=13,
+        choices=Status.choices,
+        default=Status.INIT,
+    )
+
+    def __str__(self):
+        return f"{self.user} {self.uploaded_at}"
+    
+class FileUpload(models.Model):
+    id = models.AutoField(primary_key=True)
+    upload = models.ForeignKey(Upload, on_delete=models.CASCADE, related_name="files")
+    uploaded_file = models.FileField(null=False, blank=False, upload_to=user_directory_path) # use this to test without antivirus
+    # uploaded_file = models.FileField(validators=[validate_file_infection], null=False, blank=False, upload_to=user_directory_path)
+    checksum = models.CharField(null=True, blank=True, max_length=255)
+    type = models.CharField(null=True, blank=True, max_length=255, verbose_name="file type from frontend")
+    
+    def name(self):
+        return os.path.basename(self.uploaded_file.name)
+
+    def __str__(self):
+        return self.uploaded_file.name
 
 # Custom user class using django base user class
 class Custom(models.Model):
     id = models.AutoField(primary_key=True)
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    pipeline = models.ForeignKey(Pipeline, blank=True, null=True, default=None, on_delete=models.SET_NULL)
+    user = models.OneToOneField(User, on_delete=models.DO_NOTHING)
+    pipeline = models.ForeignKey(Pipeline, blank=True, null=True, default=None, on_delete=models.DO_NOTHING)
 
 class AllowedFileType(models.Model):
     id = models.AutoField(primary_key=True)
@@ -110,7 +116,7 @@ class MetadataFormsField(models.Model):
 
     id = models.AutoField(primary_key=True)
     pipeline = models.ForeignKey(Pipeline, default=None, on_delete=models.CASCADE, related_name="fields")
-    label = models.CharField(null=True, blank=True, max_length=255, unique=True)
+    label = models.CharField(null=True, blank=True, max_length=255)
     description = models.TextField(null=True, blank=True)
     key = models.CharField(null=False, blank=False, max_length=255)
     type = models.CharField(max_length=255, choices=Type.choices, default = Type.TEXT, null=True, blank=True)
@@ -124,7 +130,9 @@ class MetadataFormsField(models.Model):
     
     class Meta:
         ordering = ['scope', 'order']
-        unique_together = ('id', 'key',)
+        constraints = [
+            models.UniqueConstraint(fields=['key', 'pipeline'], name="key_per_pipeline"),
+        ]
 
 class FieldOption(models.Model):
     id = models.AutoField(primary_key=True)
@@ -137,7 +145,9 @@ class FieldOption(models.Model):
     def __str__(self):
         return f"{self.form_field.pipeline}: {self.form_field}"
     class Meta:
-        unique_together = ('id', 'key',)
+        constraints = [
+            models.UniqueConstraint(fields=['form_field', 'key'], name="key_per_form_field"),
+        ]
 
 
 class MetadataValue(models.Model):
@@ -149,13 +159,6 @@ class MetadataValue(models.Model):
     def __str__(self):
         return self.key
 
-class ValidatorGroup(models.Model):
-    id = models.AutoField(primary_key=True)
-    description = models.TextField(null=False, blank=False)
-    group = models.ForeignKey(Group, default=None, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return self.description
 
 class Workflow(models.Model):
 
@@ -163,7 +166,7 @@ class Workflow(models.Model):
     name = models.CharField(max_length=255, null=False, blank=False)
     description = models.TextField(null=True, blank=True)
     pipeline = models.ForeignKey(Pipeline, blank=True, null=True, on_delete=models.SET_NULL, related_name="workflows")
-    validator_groups = models.ManyToManyField(ValidatorGroup)
+    validator_groups = models.ManyToManyField(Group)
 
     def __str__(self):
         return self.name
@@ -181,7 +184,7 @@ class UploadValidation(models.Model):
     state = models.CharField(max_length=255, choices=State.choices, default = State.NOT_VALIDATED, null=True, blank=True)
     upload = models.ForeignKey(Upload, on_delete=models.CASCADE, related_name="validations")
     workflow = models.ForeignKey(Workflow, null=True, blank=True, on_delete=models.CASCADE, related_name="upload_validations")
-    group = models.ForeignKey(ValidatorGroup, blank=True, null=True, on_delete=models.SET_NULL)
+    group = models.ForeignKey(Group, blank=True, null=True, on_delete=models.SET_NULL)
     validated_by = models.CharField(max_length=255, null=True, blank=True)
 
 class Note(models.Model):

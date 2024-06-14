@@ -40,10 +40,6 @@ http://localhost:4200/validation
 * validation user 2: ValidationUserY
 * validation pwd 2: ValidationUserYValidationUserY
 
-## Deployment
-### Docker 
-Coming soon...
-
 ## Tools
 ### User import
 GET /file_repo/v1/users/import/ will import all users in "eUploader/file_repo/import/users/"
